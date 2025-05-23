@@ -1,0 +1,15 @@
+/* Timeline Dot Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(245, 158, 11, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.9);
+  }
+}
+
+.timeline-dot {
+  animation: pulse-glow 2s ease-in-out infinite;
+  background-color: #f59e0b !important; /* amber-500 */
+  border-color: #78350f !important; /* amber-900 */
+}

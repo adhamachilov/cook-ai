@@ -1,0 +1,392 @@
+﻿import React, { useState } from 'react';
+import { Search as SearchIcon, Plus, X, ChevronDown } from 'lucide-react';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import RecipeCard from '../components/ui/RecipeCard';
+import Spinner from '../components/ui/Spinner';
+import { useRecipes } from '../context/RecipeContext';
+import { Recipe, IngredientItem, DietaryPreference, CuisineType } from '../types';
+
+const Search: React.FC = () => {
+  const { getRecipes, loadMoreRecipes, isLoading } = useRecipes();
+  const [currentIngredient, setCurrentIngredient] = useState('');
+  const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
+  const [results, setResults] = useState<Recipe[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedDietary, setSelectedDietary] = useState<DietaryPreference[]>([]);
+  const [selectedCuisine, setSelectedCuisine] = useState<CuisineType | ''>('');
+  const [hasSearched, setHasSearched] = useState(false);
+  // Recipe cards now navigate directly to recipe detail pages
+
+  // Common ingredients suggestions
+  const commonIngredients = [
+    'Chicken', 'Beef', 'Pasta', 'Rice', 'Eggs', 'Milk',
+    'Onion', 'Garlic', 'Potato', 'Tomato', 'Cheese'
+  ];
+
+  const dietaryOptions: { value: DietaryPreference; label: string }[] = [
+    { value: 'vegetarian', label: 'Vegetarian' },
+    { value: 'vegan', label: 'Vegan' },
+    { value: 'gluten-free', label: 'Gluten-Free' },
+    { value: 'dairy-free', label: 'Dairy-Free' },
+  ];
+
+  const cuisineOptions: { value: CuisineType; label: string }[] = [
+    { value: 'italian', label: 'Italian' },
+    { value: 'mexican', label: 'Mexican' },
+    { value: 'chinese', label: 'Chinese' },
+    { value: 'indian', label: 'Indian' },
+    { value: 'french', label: 'French' },
+    { value: 'japanese', label: 'Japanese' },
+    { value: 'american', label: 'American' },
+    { value: 'mediterranean', label: 'Mediterranean' },
+    { value: 'thai', label: 'Thai' },
+    { value: 'korean', label: 'Korean' },
+  ];
+
+  // Add ingredient to the list
+  const addIngredient = () => {
+    if (currentIngredient.trim() !== '' && !ingredients.some(i => i.name.toLowerCase() === currentIngredient.toLowerCase())) {
+      setIngredients([
+        ...ingredients, 
+        { id: `ing-${Date.now()}`, name: currentIngredient.trim() }
+      ]);
+      setCurrentIngredient('');
+    }
+  };
+
+  // Remove ingredient from the list
+  const removeIngredient = (id: string) => {
+    setIngredients(ingredients.filter(ing => ing.id !== id));
+  };
+
+  // Add suggested ingredient
+  const addSuggestedIngredient = (ingredient: string) => {
+    if (!ingredients.some(i => i.name.toLowerCase() === ingredient.toLowerCase())) {
+      setIngredients([
+        ...ingredients, 
+        { id: `ing-${Date.now()}`, name: ingredient.trim() }
+      ]);
+    }
+  };
+
+  // Toggle dietary preference
+  const toggleDietaryPreference = (preference: DietaryPreference) => {
+    if (selectedDietary.includes(preference)) {
+      setSelectedDietary(selectedDietary.filter(p => p !== preference));
+    } else {
+      setSelectedDietary([...selectedDietary, preference]);
+    }
+  };
+
+  // Search for recipes
+  const searchRecipes = async () => {
+    if (ingredients.length === 0) return;
+    
+    // Log the search criteria for debugging
+    console.log('Searching with criteria:', {
+      ingredients: ingredients.map(ing => ing.name),
+      dietaryPreferences: selectedDietary,
+      cuisineType: selectedCuisine
+    });
+    
+    setHasSearched(true);
+    
+    const recipes = await getRecipes({
+      ingredients: ingredients.map(ing => ing.name),
+      dietaryPreferences: selectedDietary.length > 0 ? selectedDietary : undefined,
+      cuisineType: selectedCuisine || undefined
+    });
+    
+    console.log('Search results:', recipes);
+    setResults(recipes);
+  };
+
+  // Clear all inputs and results
+  const clearSearch = () => {
+    setIngredients([]);
+    setSelectedDietary([]);
+    setSelectedCuisine('');
+    setResults([]);
+    setHasSearched(false);
+  };
+
+  // Handle Enter key press in the input
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      addIngredient();
+    }
+  };
+
+  return (
+    <div className="pb-20 pt-10 relative">
+      <div className="container mx-auto px-4 md:px-6">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-12 text-center">
+            <h1 className="mb-4 text-3xl font-bold md:text-4xl text-amber-100">Find Recipes with Your Ingredients</h1>
+            <p className="text-lg text-amber-200/90">
+              Enter the ingredients you have, and let our AI find the perfect recipes for you
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-gradient-to-br from-amber-700/40 to-amber-800/50 backdrop-blur-md border border-amber-400/30 text-white p-6 shadow-md md:p-8">
+            {/* Ingredients Input */}
+            <div className="mb-6">
+              <label className="mb-2 block font-medium text-amber-100">Enter Your Ingredients</label>
+              <div className="flex items-center">
+                <Input
+                  value={currentIngredient}
+                  onChange={(e) => setCurrentIngredient(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Type an ingredient and press Enter"
+                  icon={<SearchIcon size={18} />}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={addIngredient}
+                  icon={<Plus size={18} />}
+                  className="ml-2"
+                  disabled={currentIngredient.trim() === ''}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            {/* Common Ingredients Suggestions */}
+            <div className="mb-6 mt-4">
+              <h3 className="mb-2 text-sm font-medium text-amber-200">Common Ingredients</h3>
+              <div className="flex flex-wrap gap-2">
+                {commonIngredients.map((ingredient) => (
+                  <button
+                    key={ingredient}
+                    type="button"
+                    className={`rounded-full ${ingredients.some(i => i.name.toLowerCase() === ingredient.toLowerCase()) 
+                      ? 'bg-amber-600 text-white' 
+                      : 'bg-amber-700/30 text-amber-100 hover:bg-amber-700/50'} 
+                      px-3 py-1 text-sm transition-all transform hover:scale-105`}
+                    onClick={() => addSuggestedIngredient(ingredient)}
+                    disabled={ingredients.some(i => i.name.toLowerCase() === ingredient.toLowerCase())}
+                  >
+                    {ingredient}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Selected Ingredients */}
+            {ingredients.length > 0 && (
+              <div className="mb-6">
+                <label className="mb-2 block font-medium text-amber-100">Your Ingredients:</label>
+                <div className="flex flex-wrap gap-2">
+                  {ingredients.map((ing) => (
+                    <div
+                      key={ing.id}
+                      className="flex items-center rounded-full bg-amber-300/80 px-3 py-1 text-amber-950 font-medium"
+                    >
+                      <span className="text-sm">{ing.name}</span>
+                      <button
+                        onClick={() => removeIngredient(ing.id)}
+                        className="ml-1 rounded-full p-1 text-amber-950 hover:bg-amber-200/90"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Advanced Filters */}
+            <div className="mb-6">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="group flex items-center rounded-full bg-gradient-to-r from-amber-500/40 to-amber-600/40 px-4 py-2 text-amber-100 shadow-md transition-all duration-300 hover:from-amber-500/60 hover:to-amber-600/60 hover:shadow-lg"
+              >
+                <span className="font-medium">Advanced Filters</span>
+                <ChevronDown
+                  size={18}
+                  className={`ml-2 transition-transform duration-300 ${showFilters ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {showFilters && (
+                <div className="mt-4 overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-800/70 to-amber-900/70 backdrop-blur-md shadow-lg transition-all duration-300">
+                  <div className="p-1">
+                    <div className="rounded-lg bg-amber-950/50 p-5">
+                      <h3 className="mb-4 text-lg font-semibold text-amber-300">Refine Your Search</h3>
+                      
+                      <div className="grid gap-6 md:grid-cols-2">
+                        {/* Dietary Preferences */}
+                        <div className="space-y-3 rounded-lg border border-amber-600/20 bg-amber-900/40 p-4">
+                          <h4 className="font-medium text-amber-200 border-b border-amber-600/20 pb-2">Dietary Preferences</h4>
+                          <div className="grid grid-cols-2 gap-2 pt-1">
+                            {dietaryOptions.map((option) => (
+                              <div 
+                                key={option.value} 
+                                onClick={() => toggleDietaryPreference(option.value)}
+                                className={`flex cursor-pointer items-center space-x-2 rounded-md border px-3 py-2 transition-all ${selectedDietary.includes(option.value) 
+                                  ? 'border-amber-400 bg-amber-700/60 text-amber-100' 
+                                  : 'border-amber-600/20 bg-amber-800/30 text-amber-300/80 hover:bg-amber-800/50'}`}
+                              >
+                                <div className={`flex h-5 w-5 items-center justify-center rounded-sm ${selectedDietary.includes(option.value) 
+                                  ? 'bg-amber-400' 
+                                  : 'border border-amber-500/50 bg-amber-800/50'}`}
+                                >
+                                  {selectedDietary.includes(option.value) && (
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-3.5 w-3.5 text-amber-950" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                  )}
+                                </div>
+                                <span className="text-sm font-medium">{option.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Cuisine Type */}
+                        <div className="space-y-3 rounded-lg border border-amber-600/20 bg-amber-900/40 p-4">
+                          <h4 className="font-medium text-amber-200 border-b border-amber-600/20 pb-2">Cuisine Type</h4>
+                          <div className="pt-1">
+                            <div className="relative">
+                              <select
+                                value={selectedCuisine}
+                                onChange={(e) => setSelectedCuisine(e.target.value as CuisineType)}
+                                className="block w-full appearance-none rounded-md border border-amber-600/30 bg-amber-800/50 py-2.5 pl-4 pr-10 text-sm font-medium text-amber-100 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                              >
+                                <option value="">Any Cuisine</option>
+                                {cuisineOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                                <ChevronDown size={18} className="text-amber-400" />
+                              </div>
+                            </div>
+                            
+                            {/* Cuisine tags visualization */}
+                            {selectedCuisine && (
+                              <div className="mt-3 flex">
+                                <span className="rounded-full bg-amber-600/50 px-3 py-1 text-xs font-medium text-amber-100">
+                                  {cuisineOptions.find(c => c.value === selectedCuisine)?.label}
+                                  <button 
+                                    onClick={() => setSelectedCuisine('')}
+                                    className="ml-1.5 rounded-full hover:text-white"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Search Buttons */}
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={searchRecipes}
+                icon={<SearchIcon size={18} />}
+                isLoading={isLoading}
+                disabled={ingredients.length === 0 || isLoading}
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg transition-all duration-300 px-5 py-2.5"
+              >
+                {isLoading ? 'Searching...' : 'Find Recipes'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={clearSearch}
+                disabled={ingredients.length === 0 && selectedDietary.length === 0 && !selectedCuisine}
+                className="border-amber-500/50 text-amber-200 hover:bg-amber-800/40 hover:border-amber-400 transition-all duration-300 px-5 py-2.5"
+              >
+                Clear All
+              </Button>
+            </div>
+          </div>
+
+          {/* Loading Indicator */}
+          {isLoading && (
+            <div className="my-12 flex flex-col items-center justify-center">
+                    key={recipe.id}
+                    recipe={recipe}
+                    className="animate-fadeIn transition-transform duration-300 hover:scale-105"
+                  />
+                ))}
+              </div>
+              
+              {/* Generate More Button - only show if we have fewer than 6 recipes */}
+              {results.length < 6 && (
+                <div className="mt-10 flex justify-center">
+                  <Button
+                    onClick={async () => {
+                      // Get current search criteria
+                      const request = {
+                        ingredients: ingredients.map(ing => ing.name),
+                        dietaryPreferences: selectedDietary.length > 0 ? selectedDietary : undefined,
+                        cuisineType: selectedCuisine || undefined
+                      };
+                      
+                      // Load more recipes using the existing ones as a base
+                      // but limit to a maximum of 6 total recipes
+                      const moreRecipes = await loadMoreRecipes(request, results);
+                      // Ensure we never show more than 6 recipes total
+                      const limitedRecipes = moreRecipes.slice(0, 6);
+                      setResults(limitedRecipes);
+                    }}
+                    disabled={isLoading}
+                    variant="primary"
+                    className="px-6 py-3 bg-gradient-to-br from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white transition-all shadow-md hover:shadow-lg"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Spinner size="sm" className="mr-2" /> 
+                        Loading More...
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={18} className="mr-2" />
+                        Generate More Recipes
+                        <span className="ml-2 text-xs">({6 - results.length} left)</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+      
+          {/* No Results Message - Only show after search has been performed */}
+          {results.length === 0 && hasSearched && !isLoading && (
+            <div className="mx-auto mt-8 max-w-md rounded-lg bg-gradient-to-br from-amber-800/70 to-amber-900/70 backdrop-blur-md border border-amber-500/30 p-8 text-center shadow-md">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-amber-400 mx-auto">
+                <SearchIcon size={32} />
+              </div>
+              <h2 className="mb-2 text-xl font-semibold text-white">No Recipes Found</h2>
+              <p className="text-white/80 mb-4">
+                Try adding more common ingredients or adjusting your filters to find matching recipes.
+              </p>
+              <Button 
+                onClick={clearSearch} 
+                variant="outline" 
+                className="mx-auto bg-amber-700/50 hover:bg-amber-700/80 border-amber-500/50 text-amber-100 hover:text-white transition-all">
+                Clear Search
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* No modal needed - using individual recipe pages now */}
+    </div>
+  );
+};
+
+export default Search;

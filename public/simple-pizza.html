@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Pizza Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Very simple centered scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, -1.5, 4); // Adjusted camera position to show full pizza
+        
+        // Create renderer
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true, 
+            alpha: true,
+            preserveDrawingBuffer: false
+        });
+        renderer.setClearColor(0x000000, 0); // Transparent background
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        // Simple lighting
+        const light = new THREE.AmbientLight(0xffffff, 1.5);
+        scene.add(light);
+        
+        // Original pizza position at center
+        const centerPosition = new THREE.Vector3(0, 0, 0);
+        
+        // Create a group for the pizza that will be at exact center
+        const pizzaScene = new THREE.Object3D();
+        scene.add(pizzaScene);
+        
+        // Load pizza model
+        new THREE.GLTFLoader().load('/3d/pizza.glb', (gltf) => {
+            // Add the loaded model to scene
+            pizzaScene.add(gltf.scene);
+            
+            // Scale and set initial rotation - EXACT 90° vertical as requested
+            pizzaScene.scale.set(2.0, 2.0, 2.0);
+            pizzaScene.rotation.x = Math.PI / 2;
+            
+            // Render once loaded
+            renderer.render(scene, camera);
+            
+            // Start animation loop
+            animate();
+        });
+        
+        // Track mouse interaction
+        let isMouseDown = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        // Event listeners
+        renderer.domElement.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+        
+        window.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+        
+        window.addEventListener('mousemove', (e) => {
+            if (!isMouseDown) return;
+            
+            // Get mouse movement deltas
+            const deltaX = e.clientX - lastMouseX;
+            const deltaY = e.clientY - lastMouseY;
+            
+            // Allow free 3D rotation while keeping vertical axis fixed
+            pizzaScene.rotation.z += deltaX * 0.01; // Use Z rotation instead of Y for more natural feeling
+            
+            // Keep pizza position absolutely fixed
+            pizzaScene.position.set(0, 0, 0);
+            
+            // Update mouse position
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+        
+        // Touch support
+        renderer.domElement.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                isMouseDown = true;
+                lastMouseX = e.touches[0].clientX;
+                lastMouseY = e.touches[0].clientY;
+            }
+            e.preventDefault();
+        }, { passive: false });
+        
+        window.addEventListener('touchend', () => {
+            isMouseDown = false;
+        });
+        
+        window.addEventListener('touchmove', (e) => {
+            if (!isMouseDown || e.touches.length !== 1) return;
+            
+            const deltaX = e.touches[0].clientX - lastMouseX;
+            const deltaY = e.touches[0].clientY - lastMouseY;
+            
+            // Allow rotation but keep vertical axis fixed
+            pizzaScene.rotation.z += deltaX * 0.01; // Use Z rotation instead of Y
+            
+            // Keep pizza position absolutely fixed
+            pizzaScene.position.set(0, 0, 0);
+            
+            lastMouseX = e.touches[0].clientX;
+            lastMouseY = e.touches[0].clientY;
+            
+            e.preventDefault();
+        }, { passive: false });
+        
+        // Auto-rotation speed
+        const autoRotateSpeed = 0.01;
+        
+        // Animation loop ensures position is always fixed
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Always force the pizza to stay at exact center
+            pizzaScene.position.copy(centerPosition);
+            
+            // Keep X rotation fixed at 90 degrees
+            pizzaScene.rotation.x = Math.PI / 2;
+            
+            // Auto-rotate when not being interacted with
+            if (!isMouseDown) {
+                pizzaScene.rotation.z += autoRotateSpeed;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.render(scene, camera);
+        });
+    </script>
+</body>
+</html>

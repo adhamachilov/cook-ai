@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizza Model Viewer</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer@v3.3.0/dist/model-viewer.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            --model-scale: 1.5;
+            --poster-color: transparent;
+            --progress-bar-color: transparent;
+            --progress-mask: transparent;
+        }
+    </style>
+</head>
+<body>
+    <model-viewer
+        id="pizza-model"
+        src="/3d/pizza.glb"
+        alt="3D Pizza"
+        auto-rotate
+        rotation-per-second="30deg"
+        camera-orbit="0deg 90deg 2m"
+        auto-rotate-delay="0"
+        camera-target="0m 0m 0m"
+        interaction-prompt="none"
+        touch-action="pan-y"
+        disable-zoom
+        disable-tap
+        disable-pan
+        exposure="1.2"
+        shadow-intensity="0"
+        background-color="transparent"
+        environment-image="neutral"
+        ar="false"
+    ></model-viewer>
+
+    <script>
+        // Add additional interactivity
+        const modelViewer = document.getElementById('pizza-model');
+        
+        // Store initial settings
+        const defaultRotationSpeed = 30; // deg/s
+        let currentRotationSpeed = defaultRotationSpeed;
+        
+        // Increase rotation speed on interaction
+        document.addEventListener('mousedown', () => {
+            modelViewer.setAttribute('rotation-per-second', '120deg');
+            setTimeout(() => {
+                modelViewer.setAttribute('rotation-per-second', `${defaultRotationSpeed}deg`);
+            }, 1000);
+        });
+        
+        // Do the same for touch
+        document.addEventListener('touchstart', () => {
+            modelViewer.setAttribute('rotation-per-second', '120deg');
+            setTimeout(() => {
+                modelViewer.setAttribute('rotation-per-second', `${defaultRotationSpeed}deg`);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
