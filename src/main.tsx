@@ -6,14 +6,17 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
+import ErrorBoundary from './components/ErrorBoundary';
 import { RecipeProvider } from './context/RecipeContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <RecipeProvider>
-        <App />
-      </RecipeProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <RecipeProvider>
+          <App />
+        </RecipeProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>
 );

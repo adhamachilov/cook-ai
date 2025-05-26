@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direct Recipe Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #1a1a1a;
+      color: #f0f0f0;
+      margin: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2 {
+      color: #e9be74;
+    }
+    input, textarea, button, select {
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #333;
+      color: #fff;
+      width: 100%;
+    }
+    button {
+      background-color: #d97706;
+      cursor: pointer;
+      border: none;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #b45309;
+    }
+    .card {
+      background-color: #2a2a2a;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .recipe-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .recipe-card {
+      background-color: #333;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .recipe-card h3 {
+      color: #e9be74;
+      margin-top: 0;
+    }
+    .ingredient-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    .ingredient-tag {
+      background-color: #444;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 14px;
+    }
+    .error {
+      background-color: #b71c1c;
+      color: white;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .success {
+      background-color: #1b5e20;
+      color: white;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+    }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid #e9be74;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Direct Recipe Generator</h1>
+    <p>Use this tool to directly generate recipes with Google AI and save them to your database</p>
+    
+    <div class="card">
+      <h2>Enter Ingredients</h2>
+      <div>
+        <input type="text" id="ingredient-input" placeholder="Type ingredient and press Enter" />
+        <div class="ingredient-list" id="selected-ingredients"></div>
+        <button id="add-ingredient">Add Ingredient</button>
+      </div>
+      
+      <h2>Optional Filters</h2>
+      <div>
+        <label>Cuisine Type:</label>
+        <select id="cuisine-type">
+          <option value="">Any Cuisine</option>
+          <option value="italian">Italian</option>
+          <option value="mexican">Mexican</option>
+          <option value="asian">Asian</option>
+          <option value="mediterranean">Mediterranean</option>
+          <option value="american">American</option>
+          <option value="indian">Indian</option>
+          <option value="french">French</option>
+        </select>
+        
+        <div>
+          <label>Dietary Preferences:</label>
+          <div>
+            <input type="checkbox" id="vegetarian" value="vegetarian" />
+            <label for="vegetarian">Vegetarian</label>
+          </div>
+          <div>
+            <input type="checkbox" id="vegan" value="vegan" />
+            <label for="vegan">Vegan</label>
+          </div>
+          <div>
+            <input type="checkbox" id="gluten-free" value="gluten-free" />
+            <label for="gluten-free">Gluten-Free</label>
+          </div>
+        </div>
+      </div>
+      
+      <button id="generate-btn">Generate Recipes</button>
+    </div>
+    
+    <div id="status-message" style="display: none;"></div>
+    
+    <div id="loading" class="loading" style="display: none;">
+      <div class="spinner"></div>
+      <p>Generating recipes with AI...</p>
+    </div>
+    
+    <div id="recipes-container" style="display: none;">
+      <h2>Generated Recipes</h2>
+      <button id="save-recipes-btn">Save All Recipes to Database</button>
+      <div id="recipe-list" class="recipe-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // Function to generate a UUID v4
+    function generateUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, 
+              v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+    
+    // Supabase configuration
+    const SUPABASE_URL = 'https://jcswgbrzelleyxfeckhr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impjc3dnYnJ6ZWxsZXl4ZmVja2hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgxNzE3NDQsImV4cCI6MjA2Mzc0Nzc0NH0.EnBiPpGWrWKumER7eeFV3LAIyGQ0jzWEUq9KXzUCLA0';
+    
+    // Google API Key - this should be kept secure in a real app
+    const API_KEY = 'AIzaSyDGUmJF_-5O0Qp0tQgTB7L9pwgCdcM8Flk';
+
+    // Initialize Google Generative AI
+    const genAI = new window.GoogleGenerativeAI(API_KEY);
+    
+    // State
+    let ingredients = [];
+    let generatedRecipes = [];
+    
+    // DOM Elements
+    const ingredientInput = document.getElementById('ingredient-input');
+    const selectedIngredientsEl = document.getElementById('selected-ingredients');
+    const addIngredientBtn = document.getElementById('add-ingredient');
+    const generateBtn = document.getElementById('generate-btn');
+    const statusMessageEl = document.getElementById('status-message');
+    const loadingEl = document.getElementById('loading');
+    const recipesContainerEl = document.getElementById('recipes-container');
+    const recipeListEl = document.getElementById('recipe-list');
+    const saveRecipesBtn = document.getElementById('save-recipes-btn');
+    
+    // Add ingredient
+    function addIngredient() {
+      const ingredient = ingredientInput.value.trim();
+      if (ingredient && !ingredients.includes(ingredient)) {
+        ingredients.push(ingredient);
+        renderIngredients();
+        ingredientInput.value = '';
+      }
+    }
+    
+    // Render ingredients list
+    function renderIngredients() {
+      selectedIngredientsEl.innerHTML = '';
+      ingredients.forEach(ingredient => {
+        const tag = document.createElement('div');
+        tag.className = 'ingredient-tag';
+        tag.textContent = ingredient;
+        tag.addEventListener('click', () => removeIngredient(ingredient));
+        selectedIngredientsEl.appendChild(tag);
+      });
+    }
+    
+    // Remove ingredient
+    function removeIngredient(ingredient) {
+      ingredients = ingredients.filter(i => i !== ingredient);
+      renderIngredients();
+    }
+    
+    // Build the prompt for recipe generation
+    function buildPrompt() {
+      const cuisineType = document.getElementById('cuisine-type').value;
+      const dietaryPreferences = [
+        document.getElementById('vegetarian').checked ? 'vegetarian' : '',
+        document.getElementById('vegan').checked ? 'vegan' : '',
+        document.getElementById('gluten-free').checked ? 'gluten-free' : ''
+      ].filter(Boolean);
+      
+      let prompt = `Generate 3 unique and creative recipes using these ingredients: ${ingredients.join(', ')}.\n\n`;
+      
+      if (cuisineType) {
+        prompt += `Cuisine type: ${cuisineType}\n`;
+      }
+      
+      if (dietaryPreferences.length > 0) {
+        prompt += `Dietary preferences: ${dietaryPreferences.join(', ')}\n`;
+      }
+      
+      prompt += `
+Format each recipe as a JSON array with this exact structure:
+[
+  {
+    "title": "Recipe Title",
+    "description": "Brief description of the recipe",
+    "ingredients": ["Ingredient 1 (amount)", "Ingredient 2 (amount)", ...],
+    "instructions": ["Step 1", "Step 2", ...],
+    "cookingTime": minutes_to_cook,
+    "servings": number_of_servings,
+    "calories": approximate_calories_per_serving,
+    "cuisineType": "cuisine_type"
+  },
+  { ... next recipe ... }
+]
+
+EXTREMELY IMPORTANT - Ingredients MUST use PROPER CULINARY MEASUREMENTS ONLY:
+- For meats: use weight in grams, pounds, or ounces (e.g., "500g chicken breast", "1 pound ground beef")
+- For vegetables: use counts or weight (e.g., "2 onions", "500g potatoes")
+- For liquids: use volume in cups, tablespoons, milliliters (e.g., "1 cup milk", "30ml olive oil")
+- For spices: use teaspoons, tablespoons (e.g., "1 tsp salt", "2 tbsp paprika")
+
+DO NOT use generic, unclear, or unrealistic measurements like "1 part olive oil" or "some onions".
+ENSURE the recipes use proper culinary terminology.
+ALWAYS include ALL measurements in your ingredients.
+
+ONLY return the JSON array and nothing else. Do not include any explanations or additional text outside the JSON structure.
+`;
+
+      return prompt;
+    }
+    
+    // Normalize ingredient measurements to ensure they're realistic
+    function normalizeIngredientMeasurements(ingredients) {
+      return ingredients.map(ingredient => {
+        // Check if ingredient matches the pattern "ingredient (measurement)"
+        const matchPattern = /(.+?)\s*\((.+?)\)$/;
+        const match = ingredient.match(matchPattern);
+        
+        if (match) {
+          const [_, ingredientName, measurement] = match;
+          
+          // Check if measurement seems realistic
+          const hasRealisticMeasurement = /\d+\s*(g|gram|kg|oz|ounce|lb|pound|cup|tbsp|tsp|ml|l|pinch|dash|to taste)/i.test(measurement);
+          
+          if (hasRealisticMeasurement) {
+            return ingredient; // Keep as is
+          } else {
+            // Add realistic measurement based on ingredient type
+            if (/meat|chicken|beef|pork|fish|turkey/i.test(ingredientName)) {
+              return `${ingredientName} (500g)`;
+            } else if (/onion|potato|carrot|tomato|apple|pepper|cucumber/i.test(ingredientName)) {
+              return `${ingredientName} (2)`;
+            } else if (/oil|milk|water|broth|stock|cream|juice/i.test(ingredientName)) {
+              return `${ingredientName} (1 cup)`;
+            } else if (/salt|pepper|cumin|paprika|oregano|basil|thyme/i.test(ingredientName)) {
+              return `${ingredientName} (1 tsp)`;
+            } else if (/sugar|flour|rice|pasta/i.test(ingredientName)) {
+              return `${ingredientName} (1 cup)`;
+            } else {
+              return `${ingredientName} (to taste)`;
+            }
+          }
+        } else {
+          // No parentheses found, ingredient doesn't have measurement
+          if (/meat|chicken|beef|pork|fish|turkey/i.test(ingredient)) {
+            return `${ingredient} (500g)`;
+          } else if (/onion|potato|carrot|tomato|apple|pepper|cucumber/i.test(ingredient)) {
+            return `${ingredient} (2)`;
+          } else if (/oil|milk|water|broth|stock|cream|juice/i.test(ingredient)) {
+            return `${ingredient} (1 cup)`;
+          } else if (/salt|pepper|cumin|paprika|oregano|basil|thyme/i.test(ingredient)) {
+            return `${ingredient} (1 tsp)`;
+          } else if (/sugar|flour|rice|pasta/i.test(ingredient)) {
+            return `${ingredient} (1 cup)`;
+          } else {
+            return `${ingredient} (to taste)`;
+          }
+        }
+      });
+    }
+    
+    // Generate recipes
+    async function generateRecipes() {
+      if (ingredients.length === 0) {
+        showStatus('Please add at least one ingredient', 'error');
+        return;
+      }
+      
+      showLoading(true);
+      hideStatus();
+      recipesContainerEl.style.display = 'none';
+      
+      try {
+        const prompt = buildPrompt();
+        console.log('Using prompt:', prompt);
+        
+        // Get response from Google AI
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        
+        console.log('Got response, length:', text.length);
+        
+        // Extract JSON from the response
+        const jsonMatches = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
+        if (!jsonMatches) {
+          throw new Error('No valid JSON found in the response');
+        }
+        
+        const jsonStr = jsonMatches[0];
+        console.log('Extracted JSON:', jsonStr);
+        
+        let parsedRecipes;
+        try {
+          parsedRecipes = JSON.parse(jsonStr);
+          console.log('Parsed recipes:', parsedRecipes);
+        } catch (parseError) {
+          console.error('Error parsing JSON:', parseError);
+          throw new Error('Failed to parse recipe JSON');
+        }
+        
+        if (!Array.isArray(parsedRecipes) || parsedRecipes.length === 0) {
+          throw new Error('No recipes found in response');
+        }
+        
+        // Process and normalize recipes
+        generatedRecipes = parsedRecipes.map(recipe => {
+          // Generate a UUID for the recipe
+          const uuid = generateUUID();
+          
+          // Normalize ingredient measurements
+          const normalizedIngredients = normalizeIngredientMeasurements(recipe.ingredients || []);
+          
+          return {
+            id: uuid,
+            title: recipe.title || 'Untitled Recipe',
+            description: recipe.description || `A delicious recipe featuring ${ingredients[0]}`,
+            ingredients: normalizedIngredients,
+            instructions: recipe.instructions || [],
+            cookingTime: recipe.cookingTime || 30,
+            servings: recipe.servings || 4,
+            calories: recipe.calories || 350,
+            cuisineType: recipe.cuisineType || 'Mixed',
+            likes: 999 // High likes count for Popular page
+          };
+        });
+        
+        renderRecipes();
+        recipesContainerEl.style.display = 'block';
+      } catch (error) {
+        console.error('Error generating recipes:', error);
+        showStatus(`Error generating recipes: ${error.message}`, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Render recipes
+    function renderRecipes() {
+      recipeListEl.innerHTML = '';
+      
+      generatedRecipes.forEach(recipe => {
+        const recipeCard = document.createElement('div');
+        recipeCard.className = 'recipe-card';
+        
+        recipeCard.innerHTML = `
+          <h3>${recipe.title}</h3>
+          <p>${recipe.description}</p>
+          <p><strong>Cuisine:</strong> ${recipe.cuisineType}</p>
+          <p><strong>Cooking Time:</strong> ${recipe.cookingTime} minutes</p>
+          <p><strong>Servings:</strong> ${recipe.servings}</p>
+          <p><strong>Calories:</strong> ${recipe.calories} per serving</p>
+          <div>
+            <h4>Ingredients:</h4>
+            <ul>
+              ${recipe.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+            </ul>
+          </div>
+          <div>
+            <h4>Instructions:</h4>
+            <ol>
+              ${recipe.instructions.map(step => `<li>${step}</li>`).join('')}
+            </ol>
+          </div>
+        `;
+        
+        recipeListEl.appendChild(recipeCard);
+      });
+    }
+    
+    // Save recipes to database
+    async function saveRecipesToDatabase() {
+      if (generatedRecipes.length === 0) {
+        showStatus('No recipes to save', 'error');
+        return;
+      }
+      
+      showStatus('Saving recipes to database...', 'loading');
+      
+      const savedRecipes = [];
+      const failedRecipes = [];
+      
+      for (const recipe of generatedRecipes) {
+        try {
+          // Prepare recipe for database
+          const recipeToSave = {
+            id: recipe.id,
+            title: recipe.title,
+            description: recipe.description,
+            ingredients: JSON.stringify(recipe.ingredients),
+            instructions: JSON.stringify(recipe.instructions),
+            likes: 999, // High likes count
+            cookingtime: recipe.cookingTime, // lowercase for database
+            calories: recipe.calories,
+            servings: recipe.servings,
+            cuisinetype: recipe.cuisineType, // lowercase for database
+            created_at: new Date().toISOString()
+          };
+          
+          // Save to Supabase
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/recipes`, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(recipeToSave)
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to save recipe: ${errorText}`);
+          }
+          
+          savedRecipes.push(recipe.title);
+        } catch (error) {
+          console.error(`Error saving recipe ${recipe.title}:`, error);
+          failedRecipes.push(recipe.title);
+        }
+      }
+      
+      if (savedRecipes.length > 0) {
+        showStatus(`Successfully saved ${savedRecipes.length} recipes: ${savedRecipes.join(', ')}`, 'success');
+      } else {
+        showStatus('Failed to save any recipes', 'error');
+      }
+    }
+    
+    // Helper functions
+    function showStatus(message, type = 'info') {
+      statusMessageEl.textContent = message;
+      statusMessageEl.className = type;
+      statusMessageEl.style.display = 'block';
+    }
+    
+    function hideStatus() {
+      statusMessageEl.style.display = 'none';
+    }
+    
+    function showLoading(show) {
+      loadingEl.style.display = show ? 'flex' : 'none';
+    }
+    
+    // Event listeners
+    addIngredientBtn.addEventListener('click', addIngredient);
+    
+    ingredientInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        addIngredient();
+      }
+    });
+    
+    generateBtn.addEventListener('click', generateRecipes);
+    saveRecipesBtn.addEventListener('click', saveRecipesToDatabase);
+  </script>
+</body>
+</html>

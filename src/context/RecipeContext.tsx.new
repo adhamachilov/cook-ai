@@ -46,15 +46,15 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   useEffect(() => {
     const fetchPopular = async () => {
       try {
-        console.log('Fetching popular recipes for RecipeContext...');
+        console.log('Fetching popular recipes in RecipeContext');
         const dbPopularRecipes = await fetchPopularRecipes();
+        console.log('Popular recipes from Supabase:', dbPopularRecipes);
         
-        // Always use database recipes (our new Supabase database)
-        setPopularRecipes(dbPopularRecipes);
-        console.log('Set popular recipes from database:', dbPopularRecipes.length, dbPopularRecipes);
-        
-        // Only use fallback if absolutely necessary
-        if (dbPopularRecipes.length === 0) {
+        if (dbPopularRecipes && dbPopularRecipes.length > 0) {
+          setPopularRecipes(dbPopularRecipes);
+          console.log('Set popular recipes from database:', dbPopularRecipes.length);
+        } else {
+          console.log('No popular recipes found in database, using fallback');
           // Fallback to initial recipes if no recipes in database
           const initialPopularRecipes: Recipe[] = [
             {
@@ -277,35 +277,12 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       // Generate recipes based on user's request
       const newRecipes = await generateUniqueRecipes(request, offset);
       
-      // Create an array to collect all the stored recipes
-      const storedRecipes: Recipe[] = [];
-      
-      // Store the generated recipes in Supabase and add them to popular recipes
+      // Store the generated recipes in Supabase
       for (const recipe of newRecipes) {
-        // Add likes property to ensure it appears in popular page
-        const recipeWithLikes = {
-          ...recipe,
-          likes: 5 // Start with higher likes to ensure visibility in Popular
-        };
-        
-        // Store in Supabase
-        const storedRecipe = await storeRecipe(recipeWithLikes);
-        if (storedRecipe) {
-          storedRecipes.push(storedRecipe as Recipe);
-        }
+        await storeRecipe(recipe);
       }
       
-      // Fetch the latest popular recipes from Supabase to ensure we have the latest data
-      try {
-        const dbPopularRecipes = await fetchPopularRecipes();
-        if (dbPopularRecipes && dbPopularRecipes.length > 0) {
-          setPopularRecipes(dbPopularRecipes);
-        }
-      } catch (e) {
-        console.error('Error refreshing popular recipes:', e);
-      }
-      
-      // Update local state with the recipes that were successfully stored
+      // Update local state
       setRecipes(newRecipes);
       return newRecipes;
     } catch (error) {
@@ -323,32 +300,9 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       // Generate more recipes with an offset to get different results
       const moreRecipes = await generateUniqueRecipes(request, currentRecipes.length);
       
-      // Create an array to collect all the stored recipes
-      const storedRecipes: Recipe[] = [];
-      
-      // Store the generated recipes in Supabase and add them to popular recipes
+      // Store the generated recipes in Supabase
       for (const recipe of moreRecipes) {
-        // Add likes property to ensure it appears in popular page
-        const recipeWithLikes = {
-          ...recipe,
-          likes: 5 // Start with higher likes to ensure visibility in Popular
-        };
-        
-        // Store in Supabase
-        const storedRecipe = await storeRecipe(recipeWithLikes);
-        if (storedRecipe) {
-          storedRecipes.push(storedRecipe as Recipe);
-        }
-      }
-      
-      // Fetch the latest popular recipes from Supabase to ensure we have the latest data
-      try {
-        const dbPopularRecipes = await fetchPopularRecipes();
-        if (dbPopularRecipes && dbPopularRecipes.length > 0) {
-          setPopularRecipes(dbPopularRecipes);
-        }
-      } catch (e) {
-        console.error('Error refreshing popular recipes:', e);
+        await storeRecipe(recipe);
       }
       
       // Combine with existing recipes

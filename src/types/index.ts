@@ -10,6 +10,7 @@ export interface Recipe {
   calories: number;
   tags: string[];
   cuisineType: string;
+  likes?: number;
   dietaryInfo: {
     isVegetarian: boolean;
     isVegan: boolean;
@@ -29,6 +30,9 @@ export interface AIRecipeRequest {
   excludeIngredients?: string[];
   cuisineType?: string;
   useAI?: boolean;
+  maxResults?: number;
+  ensureDiversity?: boolean;
+  excludeIds?: string[];
 }
 
 export interface AIRecipeResponse {

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fix CookAI Database</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #1a1a1a;
+      color: #f0f0f0;
+      margin: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #e9be74;
+    }
+    button {
+      background-color: #d97706;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #b45309;
+    }
+    pre {
+      background-color: #2a2a2a;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #1b5e20;
+      color: #ffffff;
+    }
+    .error {
+      background-color: #b71c1c;
+      color: #ffffff;
+    }
+    .panel {
+      background-color: #2a2a2a;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Fix CookAI Database</h1>
+    
+    <div class="panel">
+      <h2>Add Test Recipes</h2>
+      <p>This tool will add known good test recipes to your database without removing existing ones.</p>
+      <button id="addTestRecipes">➕ Add Test Recipes Only</button>
+      <div id="clearStatus" class="status" style="display: none;"></div>
+    </div>
+    
+    <div class="panel">
+      <h2>Database Status</h2>
+      <button id="checkStatus">Check Database Status</button>
+      <div id="statusOutput" class="status" style="display: none;"></div>
+    </div>
+    
+    <div class="panel">
+      <h2>Instructions</h2>
+      <ol>
+        <li>Click "Clear Database & Add Test Recipes" to reset your database and add test recipes</li>
+        <li>Click "Check Database Status" to verify recipes are in the database</li>
+        <li>Go to your app's Popular page to see if the recipes appear</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    // Database configuration - CORRECT URL!
+    const SUPABASE_URL = 'https://jcswgbrzelleyxfeckhr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impjc3dnYnJ6ZWxsZXl4ZmVja2hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgxNzE3NDQsImV4cCI6MjA2Mzc0Nzc0NH0.EnBiPpGWrWKumER7eeFV3LAIyGQ0jzWEUq9KXzUCLA0';
+    
+    // Generate a UUID v4
+    function generateUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, 
+              v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+    
+    // Generate test recipes
+    function generateTestRecipes() {
+      return [
+        {
+          id: generateUUID(),
+          title: "Ultimate Spaghetti Bolognese",
+          description: "A classic Italian pasta dish with a rich meat sauce",
+          ingredients: JSON.stringify([
+            "500g ground beef",
+            "1 onion, finely chopped",
+            "2 garlic cloves, minced",
+            "2 carrots, diced",
+            "2 celery stalks, diced",
+            "400g canned tomatoes",
+            "2 tbsp tomato paste",
+            "1 cup beef stock",
+            "1 tsp dried oregano",
+            "1 tsp dried basil",
+            "400g spaghetti",
+            "Parmesan cheese, for serving"
+          ]),
+          instructions: JSON.stringify([
+            "Heat olive oil in a large pan and cook onion, garlic, carrots, and celery until softened",
+            "Add ground beef and cook until browned",
+            "Stir in tomato paste, canned tomatoes, beef stock, and herbs",
+            "Simmer for 1-2 hours until sauce is rich and thick",
+            "Cook spaghetti according to package instructions",
+            "Serve sauce over spaghetti with grated Parmesan cheese"
+          ]),
+          likes: 999,
+          cookingtime: 90,
+          calories: 550,
+          servings: 4,
+          cuisinetype: "Italian",
+          created_at: new Date().toISOString()
+        },
+        {
+          id: generateUUID(),
+          title: "Quick Chicken Stir-Fry",
+          description: "A fast and flavorful Asian-inspired dish perfect for busy weeknights",
+          ingredients: JSON.stringify([
+            "500g chicken breast, sliced",
+            "1 red bell pepper, sliced",
+            "1 yellow bell pepper, sliced",
+            "2 carrots, julienned",
+            "1 broccoli head, cut into florets",
+            "3 tbsp soy sauce",
+            "1 tbsp honey",
+            "2 garlic cloves, minced",
+            "1 tsp ginger, grated",
+            "2 tbsp vegetable oil",
+            "Rice, for serving"
+          ]),
+          instructions: JSON.stringify([
+            "Mix soy sauce, honey, garlic, and ginger in a small bowl",
+            "Heat oil in a wok or large frying pan",
+            "Cook chicken until golden and cooked through, then remove",
+            "Stir-fry vegetables for 3-4 minutes until crisp-tender",
+            "Return chicken to the pan and add sauce",
+            "Toss until everything is well coated and heated through",
+            "Serve immediately over rice"
+          ]),
+          likes: 999,
+          cookingtime: 25,
+          calories: 420,
+          servings: 4,
+          cuisinetype: "Asian",
+          created_at: new Date().toISOString()
+        },
+        {
+          id: generateUUID(),
+          title: "Homemade Chocolate Chip Cookies",
+          description: "Classic chewy cookies with melty chocolate chips",
+          ingredients: JSON.stringify([
+            "225g butter, softened",
+            "200g brown sugar",
+            "100g white sugar",
+            "2 eggs",
+            "1 tsp vanilla extract",
+            "300g all-purpose flour",
+            "1 tsp baking soda",
+            "1/2 tsp salt",
+            "300g chocolate chips"
+          ]),
+          instructions: JSON.stringify([
+            "Preheat oven to 350°F (175°C)",
+            "Cream together butter and sugars until light and fluffy",
+            "Beat in eggs one at a time, then add vanilla",
+            "In a separate bowl, combine flour, baking soda, and salt",
+            "Gradually mix dry ingredients into the butter mixture",
+            "Fold in chocolate chips",
+            "Drop tablespoon-sized balls onto baking sheets",
+            "Bake for 10-12 minutes until edges are golden",
+            "Allow to cool on the baking sheet for 5 minutes before transferring to a wire rack"
+          ]),
+          likes: 999,
+          cookingtime: 30,
+          calories: 180,
+          servings: 36,
+          cuisinetype: "Dessert",
+          created_at: new Date().toISOString()
+        }
+      ];
+    }
+    
+    // Add test recipes without clearing database
+    document.getElementById('addTestRecipes').addEventListener('click', async () => {
+      const statusEl = document.getElementById('clearStatus');
+      statusEl.textContent = 'Adding test recipes to database...';
+      statusEl.className = 'status';
+      statusEl.style.display = 'block';
+      
+      try {
+        
+        // Step 2: Add test recipes
+        const testRecipes = generateTestRecipes();
+        const successfulRecipes = [];
+        
+        for (const recipe of testRecipes) {
+          try {
+            const addResponse = await fetch(`${SUPABASE_URL}/rest/v1/recipes`, {
+              method: 'POST',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+              },
+              body: JSON.stringify(recipe)
+            });
+            
+            if (!addResponse.ok) {
+              const errorText = await addResponse.text();
+              console.error(`Failed to add recipe ${recipe.title}: ${errorText}`);
+              continue;
+            }
+            
+            const data = await addResponse.json();
+            successfulRecipes.push(recipe.title);
+            console.log(`Added recipe: ${recipe.title}`, data);
+          } catch (err) {
+            console.error(`Error adding recipe ${recipe.title}:`, err);
+          }
+        }
+        
+        if (successfulRecipes.length > 0) {
+          statusEl.textContent = `Successfully added ${successfulRecipes.length} test recipes: ${successfulRecipes.join(', ')}`;
+          statusEl.className = 'status success';
+        } else {
+          throw new Error('Failed to add any test recipes');
+        }
+      } catch (error) {
+        statusEl.textContent = `Error: ${error.message || 'Unknown error occurred'}`;
+        statusEl.className = 'status error';
+        console.error('Error:', error);
+      }
+    });
+    
+    // Check database status
+    document.getElementById('checkStatus').addEventListener('click', async () => {
+      const statusEl = document.getElementById('statusOutput');
+      statusEl.textContent = 'Checking database status...';
+      statusEl.className = 'status';
+      statusEl.style.display = 'block';
+      
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/recipes?select=id,title,likes,created_at,cuisinetype&order=created_at.desc`, {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`
+          }
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to check database: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          statusEl.innerHTML = `
+            <p class="success">Found ${data.length} recipes in database!</p>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        } else {
+          statusEl.innerHTML = `
+            <p class="error">No recipes found in database. Try adding test recipes first.</p>
+          `;
+        }
+      } catch (error) {
+        statusEl.textContent = `Error: ${error.message || 'Unknown error occurred'}`;
+        statusEl.className = 'status error';
+      }
+    });
+  </script>
+</body>
+</html>
