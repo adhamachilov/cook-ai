@@ -1,0 +1,6 @@
+# Netlify redirects file
+# Handle SPA routing
+/*    /index.html   200
+
+# Ensure 3D models are properly served
+/3d/*  /3d/:splat  200

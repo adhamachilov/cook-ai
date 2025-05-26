@@ -4,9 +4,9 @@ import { resolve } from 'path';
 import fs from 'fs';
 
 // Create a public/3d directory and copy the pizza model there for browser access
-const publicDir = resolve('d:/Projects/MBZUAI/CookAI/1-b/project-bolt-sb1-xszlzyre/project/public');
+const publicDir = resolve(__dirname, 'public');
 const publicModelDir = resolve(publicDir, '3d');
-const modelSource = resolve('d:/Projects/MBZUAI/CookAI/1-b/project-bolt-sb1-xszlzyre/project/3d/pizza.glb');
+const modelSource = resolve(__dirname, '3d/pizza.glb');
 const modelDest = resolve(publicModelDir, 'pizza.glb');
 
 // Create directory if it doesn't exist
