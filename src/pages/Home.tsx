@@ -35,8 +35,14 @@ const Home: React.FC = () => {
           <div className="container mx-auto px-4 text-center">
             {/* Main Title with 3D pizza models as 'O's */}
             <div className="mb-4">
+              {/* Large text version for all screen sizes */}
               <h1 className="text-9xl md:text-[15rem] font-extrabold tracking-tighter text-white">
-                <div className="flex items-center justify-center" style={{ gap: '0' }}>
+                {/* On small devices, show only the text */}
+                <div className="md:hidden">
+                  COOK AI
+                </div>
+                {/* On medium and larger devices, show text with 3D models */}
+                <div className="hidden md:flex items-center justify-center" style={{ gap: '0' }}>
                   <motion.span 
                     style={{ transform: 'translateY(-160px)', display: 'inline-block', color: '#FFFFFF' }}
                     initial={{ opacity: 0, x: -50 }}

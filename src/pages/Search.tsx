@@ -11,7 +11,7 @@ import { useRecipes } from '../context/RecipeContext';
 import { Recipe, IngredientItem, DietaryPreference, CuisineType } from '../types';
 
 const Search: React.FC = () => {
-  const { getRecipes } = useRecipes();
+  const { } = useRecipes(); // getRecipes removed since the Generate More button was removed
   const [isLoading, setIsLoading] = useState(false);
   const [currentIngredient, setCurrentIngredient] = useState('');
   const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
@@ -477,45 +477,7 @@ const Search: React.FC = () => {
                 ))}
               </div>
               
-              {/* The Generate More button is only shown if we have fewer than 6 recipes */}
-              {results.length < 6 && (
-                <div className="mt-10 flex justify-center">
-                  <Button
-                    onClick={async () => {
-                      // Get current search criteria
-                      const request = {
-                        ingredients: ingredients.map(ing => ing.name),
-                        dietaryPreferences: selectedDietary.length > 0 ? selectedDietary : undefined,
-                        cuisineType: selectedCuisine || undefined,
-                        ensureDiversity: true  // Ensure diverse recipes
-                      };
-                      
-                      // Calculate how many more recipes we need to reach 6
-                      const remainingCount = 6 - results.length;
-                      
-                      // Get remaining recipes with current results as an exclusion list
-                      const newRecipes = await getRecipes({
-                        ...request,
-                        maxResults: remainingCount, // How many more we need
-                        excludeIds: results.map(r => r.id) // Exclude existing recipe IDs for diversity
-                      });
-                      
-                      console.log(`Generated ${newRecipes.length} additional diverse recipes`);
-                      
-                      // Add the new recipes to existing ones (don't replace)
-                      const combinedRecipes = [...results, ...newRecipes];
-                      setResults(combinedRecipes);
-                      
-                      console.log(`Now displaying ${combinedRecipes.length} total recipes out of maximum 6`);
-                    }}
-                    isLoading={isLoading}
-                    disabled={isLoading}
-                    className="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-md hover:shadow-lg transition-all duration-300 px-5 py-2.5"
-                  >
-                    {isLoading ? "Generating..." : "Generate More Recipes"}
-                  </Button>
-                </div>
-              )}
+              {/* Generate More button has been removed as requested */}
             </div>
           )}
       

@@ -102,18 +102,18 @@ const Navbar: React.FC = () => {
       animate="visible"
       variants={navbarVariants}
       className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-black/20 backdrop-blur-md shadow-md' : 'bg-transparent'
+        scrolled ? 'bg-black/30 backdrop-blur-xl shadow-md' : 'bg-black/10 backdrop-blur-sm'
       }`}
     >
-      <div className="container mx-auto">
-        <div className="flex items-center justify-center px-4 py-3 relative">
+      <div className="container mx-auto pt-4 md:pt-2 pb-2 md:pb-0">
+        <div className="flex items-center justify-center px-4 py-4 md:py-3 relative">
           {/* Logo - Left Side */}
           <motion.div
             variants={logoVariants}
             whileHover="hover"
             className="absolute left-4"
           >
-            <Link to="/" className="flex items-center space-x-2 z-10">
+            <Link to="/" className="flex items-center space-x-2 z-10 py-1">
               <motion.div
                 whileHover={{ rotate: 10 }}
                 transition={{ duration: 0.2 }}
@@ -126,7 +126,7 @@ const Navbar: React.FC = () => {
 
           {/* Centered Desktop Navigation */}
           <motion.div 
-            className="hidden md:flex items-center bg-amber-700/40 backdrop-blur-sm rounded-full px-6 py-2 border border-amber-500/30 shadow-md"
+            className="hidden md:flex items-center bg-amber-700/50 backdrop-blur-lg rounded-full px-6 py-2 border border-amber-500/40 shadow-md"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
