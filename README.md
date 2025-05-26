@@ -1,7 +1,5 @@
 # CookAI
 
-![CookAI Logo](public/favicon.png)
-
 CookAI is a modern recipe discovery application that helps users find delicious recipes based on available ingredients, with an elegant UI and smooth animations powered by Framer Motion.
 
 ## Features
@@ -80,9 +78,8 @@ yarn dev
 
 ## Contact
 
-Adham Achilov - adhamachilovusa@gmail.com
+Adham Abdiyev - adhamachilovusa@gmail.com
 
 ## Acknowledgments
 
-- Special thanks to MBZUAI for project support
 - All contributors who have helped make CookAI better
